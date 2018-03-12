@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+
+const { resolve } = require("path");
+
+const filePath = resolve(__dirname, "..", process.argv[2]);
+const data = require(filePath);
+
+const fitzpatrick = {
+  "1F3FB": "with light skin tone",
+  "1F3FC": "with medium light skin tone",
+  "1F3FD": "with medium skin tone",
+  "1F3FE": "with medium dark skin tone",
+  "1F3FF": "with dark skin tone"
+};
+
+const toHex = s => parseInt(s, 16);
+const unifiedToCodePoints = string => string.split("-").map(toHex);
+const unifiedToEmoji = string =>
+  String.fromCodePoint(...unifiedToCodePoints(string));
+
+const emojiAndDescription = entry => [
+  unifiedToEmoji(entry.unified),
+  (entry.name || entry.short_name.replace("-", " ")).toLowerCase()
+];
+
+const variant = (parentName, map) => ([variantCode, entry]) => {
+  map[unifiedToEmoji(entry.unified)] = `${parentName} ${
+    fitzpatrick[variantCode]
+  }`;
+};
+
+const map = {};
+
+const processEntry = entry => {
+  const [emoji, name] = emojiAndDescription(entry);
+
+  map[emoji] = name;
+
+  if (entry.skin_variations) {
+    Object.entries(entry.skin_variations).forEach(variant(name, map));
+  }
+};
+
+data.forEach(processEntry);
+
+process.stdout.write(JSON.stringify(map));
